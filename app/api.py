@@ -42,17 +42,15 @@ class stateStuct(BaseModel):
     startFlag: bool
     sessionFlag: bool
 
+def loadConfig():
+    global settingsDict, config, statsDict, fullDict
+    with open(config, "r", encoding='utf8') as file:
+        fullDict = yaml.safe_load(file)
+
+
 config = 'config.yaml'
-statsDict = {'targetSpeed' : 0, 'currentSpeed' : 0, 'rpm' : 0, 'dropsAmount' : 0, 'vaccinationsAmount' : 0}
-with open(config, "r", encoding='utf8') as file:
-    settingsDict = yaml.safe_load(file)
-
-
-statsDict['targetSpeed'] = 1000
-statsDict['currentSpeed'] = 999
-statsDict['rpm'] = 200
-statsDict['dropsAmount'] = 3
-statsDict['vaccinationsAmount'] = 200
+fullDict = {}
+loadConfig()
 
 @app.get("/api", tags=["root"])
 async def read_root()->dict:
@@ -60,16 +58,16 @@ async def read_root()->dict:
 
 @app.post("/api/settings_update", tags=["settings"])
 async def getSettings(settingsNew: settingsStruct):
-    global settingsDict, config
+    global fullDict, config
     
-    settingsDict['rotDir'] = settingsNew.rotDir
-    settingsDict['targetSpeed'] = settingsNew.targetSpeed
-    settingsDict['vacPos1'] = settingsNew.vacPos1
-    settingsDict['vacPos2'] = settingsNew.vacPos2
-    settingsDict['pusher'] = settingsNew.pusher
+    fullDict['rotDir'] = settingsNew.rotDir
+    fullDict['targetSpeed'] = settingsNew.targetSpeed
+    fullDict['vacPos1'] = settingsNew.vacPos1
+    fullDict['vacPos2'] = settingsNew.vacPos2
+    fullDict['pusher'] = settingsNew.pusher
     try:
         with open(config, 'w', encoding='utf8') as file:
-            yaml.dump(settingsDict, file, allow_unicode=True, default_flow_style=False)
+            yaml.dump(fullDict, file, allow_unicode=True, default_flow_style=False)
     except:
         return {
             "status": "error",
@@ -80,43 +78,40 @@ async def getSettings(settingsNew: settingsStruct):
 
 @app.get("/api/settings_update", tags=["settings_upload"])
 async def getSettings():
-    # global settingsDict
-    global config
-    with open(config, "r", encoding='utf8') as file:
-        settingsDict = yaml.safe_load(file)
-    settings = [{ 'id': 0, 'title': 'Направление вращения', 'options': ['По часовой', 'Против часовой'], 'nameSet': 'rotDir', 'value': settingsDict['rotDir'], 'input':'SelectInput'},
-        { 'id': 1, 'title': 'Позиция вакцинатора 1', 'options': [2, 3, 4, 5, 6, 7, 8, 9], 'nameSet': 'vacPos1', 'value': settingsDict['vacPos1'], 'input':'SelectInput' },
-        { 'id': 2, 'title': 'Позиция вакцинатора 2', 'options': [2, 3, 4, 5, 6, 7, 8, 9], 'nameSet': 'vacPos2', 'value': settingsDict['vacPos2'], 'input':'SelectInput' },
-        { 'id': 3, 'title': 'Толкатель', 'options': ['Без сброса', 'Сброс всех', 'Одна вакцина', 'Две вакцины'], 'nameSet': 'pusher', 'value': settingsDict['pusher'], 'input': 'SelectInput' },
-        { 'id': 4, 'title': 'Скорость вращения', 'options': [], 'nameSet': 'targetSpeed', 'value': settingsDict['targetSpeed'], 'input':'TextInput' }]
+    loadConfig()
+    settings = [{ 'id': 0, 'title': 'Направление вращения', 'options': ['По часовой', 'Против часовой'], 'nameSet': 'rotDir', 'value': fullDict['rotDir'], 'input':'SelectInput'},
+        { 'id': 1, 'title': 'Позиция вакцинатора 1', 'options': [2, 3, 4, 5, 6, 7, 8, 9], 'nameSet': 'vacPos1', 'value': fullDict['vacPos1'], 'input':'SelectInput' },
+        { 'id': 2, 'title': 'Позиция вакцинатора 2', 'options': [2, 3, 4, 5, 6, 7, 8, 9], 'nameSet': 'vacPos2', 'value': fullDict['vacPos2'], 'input':'SelectInput' },
+        { 'id': 3, 'title': 'Толкатель', 'options': ['Без сброса', 'Сброс всех', 'Одна вакцина', 'Две вакцины'], 'nameSet': 'pusher', 'value': fullDict['pusher'], 'input': 'SelectInput' },
+        { 'id': 4, 'title': 'Скорость вращения', 'options': [], 'nameSet': 'targetSpeed', 'value': fullDict['targetSpeed'], 'input':'TextInput' }]
     return JSONResponse(content=settings)
 
 @app.get("/api/stats", tags=["stats"])
 async def getSettings(request: Request)->dict:
-    global statsDict, settingsDict 
-    stats = [{ 'id': 0, 'title': 'Целевая скорость', 'value': settingsDict['targetSpeed'] },
-        { 'id': 1, 'title': 'Текущая скорость', 'value': statsDict['currentSpeed'] },
-        { 'id': 2, 'title': 'Количество оборотов', 'value': statsDict['rpm'] },
-        { 'id': 3, 'title': 'Количество сбросов', 'value': statsDict['dropsAmount'] },
-        { 'id': 4, 'title': 'Количество вакцинаций', 'value': statsDict['vaccinationsAmount'] }]
+    global fullDict
+    stats = [{ 'id': 0, 'title': 'Целевая скорость', 'value': fullDict['targetSpeed'] },
+        { 'id': 1, 'title': 'Текущая скорость', 'value': fullDict['currentSpeed'] },
+        { 'id': 2, 'title': 'Количество оборотов', 'value': fullDict['rotationAmount'] },
+        { 'id': 3, 'title': 'Количество сбросов', 'value': fullDict['dropsAmount'] },
+        { 'id': 4, 'title': 'Количество вакцинаций 1', 'value': fullDict['vaccinationAmount1'] },
+        { 'id': 5, 'title': 'Количество вакцинаций 2', 'value': fullDict['vaccinationAmount2'] }]
     return JSONResponse(content=stats)
 
 @app.get("/api/state", tags=["state"])
 async def getSettings(request: Request)->dict:
-    global settingsDict 
-    state = { 'startFlag' : settingsDict['startFlag'], 'sessionFlag' : settingsDict['sessionFlag'], }
+    global fullDict 
+    state = { 'startFlag' : fullDict['startFlag'], 'sessionFlag' : fullDict['sessionFlag'], }
     return JSONResponse(content=state)
 
 @app.post("/api/state", tags=["state_update"])
 async def getSettings(newState: stateStuct)->dict:
-    global settingsDict 
-    settingsDict['startFlag'] = newState.startFlag
-    settingsDict['sessionFlag'] = newState.sessionFlag
-    print(newState)
+    global fullDict 
+    fullDict['startFlag'] = newState.startFlag
+    fullDict['sessionFlag'] = newState.sessionFlag
     
     try:
         with open(config, 'w', encoding='utf8') as file:
-            yaml.dump(settingsDict, file, allow_unicode=True, default_flow_style=False)
+            yaml.dump(fullDict, file, allow_unicode=True, default_flow_style=False)
     except:
         return {
             "status": "error",

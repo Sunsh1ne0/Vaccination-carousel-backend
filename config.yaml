@@ -5,3 +5,9 @@ startFlag: false
 targetSpeed: 770
 vacPos1: 5
 vacPos2: 6
+
+currentSpeed: 0.0
+dropsAmount: 0
+rotationAmount: 0
+vaccinationAmount1: 0
+vaccinationAmount2: 0
