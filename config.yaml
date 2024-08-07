@@ -1,13 +1,12 @@
-pusher: Сброс всех
-rotDir: Против часовой
-sessionFlag: false
-startFlag: false
-targetSpeed: 770
-vacPos1: 5
-vacPos2: 6
-
 currentSpeed: 0.0
 dropsAmount: 0
+pusher: Сброс всех
+rotDir: Против часовой
 rotationAmount: 0
+sessionFlag: false
+startFlag: false
+targetSpeed: 4.2
+vacPos1: 5
+vacPos2: 6
 vaccinationAmount1: 0
 vaccinationAmount2: 0

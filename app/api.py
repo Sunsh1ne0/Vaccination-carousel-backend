@@ -26,13 +26,13 @@ app.add_middleware(
 
 class settingsStruct(BaseModel):
     rotDir: str
-    targetSpeed: int
+    targetSpeed: float
     vacPos1: int
     vacPos2: int
     pusher: str
 
 class statsStuct(BaseModel):
-    targetSpeed: int
+    targetSpeed: float
     currentSpeed: int
     rpm: int
     dropsAmount: int
@@ -83,12 +83,13 @@ async def getSettings():
         { 'id': 1, 'title': 'Позиция вакцинатора 1', 'options': [2, 3, 4, 5, 6, 7, 8, 9], 'nameSet': 'vacPos1', 'value': fullDict['vacPos1'], 'input':'SelectInput' },
         { 'id': 2, 'title': 'Позиция вакцинатора 2', 'options': [2, 3, 4, 5, 6, 7, 8, 9], 'nameSet': 'vacPos2', 'value': fullDict['vacPos2'], 'input':'SelectInput' },
         { 'id': 3, 'title': 'Толкатель', 'options': ['Без сброса', 'Сброс всех', 'Одна вакцина', 'Две вакцины'], 'nameSet': 'pusher', 'value': fullDict['pusher'], 'input': 'SelectInput' },
-        { 'id': 4, 'title': 'Скорость вращения', 'options': [], 'nameSet': 'targetSpeed', 'value': fullDict['targetSpeed'], 'input':'TextInput' }]
+        { 'id': 4, 'title': 'Скорость вращения', 'options': [], 'nameSet': 'targetSpeed', 'value': fullDict['targetSpeed'], 'input':'SliderInput' }]
     return JSONResponse(content=settings)
 
 @app.get("/api/stats", tags=["stats"])
 async def getSettings(request: Request)->dict:
     global fullDict
+    loadConfig()
     stats = [{ 'id': 0, 'title': 'Целевая скорость', 'value': fullDict['targetSpeed'] },
         { 'id': 1, 'title': 'Текущая скорость', 'value': fullDict['currentSpeed'] },
         { 'id': 2, 'title': 'Количество оборотов', 'value': fullDict['rotationAmount'] },
