@@ -3,7 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 import yaml
-import os
+import pathlib
 
 app = FastAPI()
 
@@ -48,7 +48,7 @@ def loadConfig():
         fullDict = yaml.safe_load(file)
 
 
-config = 'config.yaml'
+config = str(pathlib.Path(__file__).parent.parent.resolve()) + '/config.yaml'
 fullDict = {}
 loadConfig()
 
