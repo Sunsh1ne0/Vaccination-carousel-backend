@@ -6,6 +6,7 @@ import yaml
 import pathlib
 
 app = FastAPI()
+firstStart = True
 
 origins = [
     # "http://localhost",
@@ -100,7 +101,10 @@ async def getSettings(request: Request)->dict:
 
 @app.get("/api/state", tags=["state"])
 async def getSettings(request: Request)->dict:
-    global fullDict 
+    global fullDict, firstStart
+    if firstStart:
+        firstStart = False
+        fullDict['startFlag'] = False
     state = { 'startFlag' : fullDict['startFlag'], 'sessionFlag' : fullDict['sessionFlag'], }
     return JSONResponse(content=state)
 
