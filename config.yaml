@@ -5,8 +5,8 @@ rotDir: Против часовой
 rotationAmount: 0
 sessionFlag: false
 startFlag: false
-targetSpeed: 2.5
-vacPos1: 5
+targetSpeed: 5.0
+vacPos1: 2
 vacPos2: 6
 vaccinationAmount1: 0
 vaccinationAmount2: 0
