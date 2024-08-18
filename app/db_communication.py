@@ -20,13 +20,17 @@ def init_tables():
     try:
         if conn:
             with conn.cursor() as curs:
-                curs.execute("SELECT * from information_schema.tables where table_name=%s", ('carousel_stats',))
-                if not bool(curs.rowcount):
-                    curs.execute('CREATE TABLE carousel_stats (id Serial, timestamp TIMESTAMP, current_speed float8, dropsAmount INT, rotationAmount INT, vaccinationAmount1 INT, vaccinationAmount2 INT, startFlag boolean, sessionFlag boolean)')
+                curs.execute('CREATE TABLE IF NOT EXISTS carousel_stats (id Serial, timestamp TIMESTAMP, current_speed float8, dropsAmount INT, rotationAmount INT, vaccinationAmount1 INT, vaccinationAmount2 INT, startFlag boolean, sessionFlag boolean, sessionNum INT)')
+                curs.execute('SELECT * FROM carousel_stats ORDER BY id DESC LIMIT 1')
+                rows = curs.fetchall()
+                if len(rows) == 0:
+                    curs.execute('INSERT INTO carousel_stats (timestamp, current_speed, dropsAmount, rotationAmount, vaccinationAmount1, vaccinationAmount2, startFlag, sessionFlag, sessionNum) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)', (datetime.now(), 0, 0, 0, 0, 0, False, False, 0))
                     conn.commit()
-                curs.execute("SELECT * from information_schema.tables where table_name=%s", ('carousel_settings',))
-                if not bool(curs.rowcount):
-                    curs.execute('CREATE TABLE carousel_settings (id Serial, timestamp TIMESTAMP, rotDir text, targetSpeed float8, vacPos1 INT, vacPos2 INT, pusher text)')
+        
+                curs.execute('CREATE TABLE IF NOT EXISTS carousel_settings (id Serial, timestamp TIMESTAMP, rotDir text, targetSpeed float8, vacPos1 INT, vacPos2 INT, pusher text)')                
+                curs.execute('SELECT * FROM carousel_settings ORDER BY id DESC LIMIT 1')
+                rows = curs.fetchall()
+                if len(rows) == 0:
                     curs.execute('INSERT INTO carousel_settings (timestamp, rotDir, targetSpeed, vacPos1, vacPos2, pusher) VALUES (%s, %s, %s, %s, %s, %s)', (datetime.now(), 'Counterclockwise', 1.8, 2, 3, 'Drop all'))
                     conn.commit()
             return 0
@@ -46,11 +50,11 @@ def update_settings(rotDir, targetSpeed, vacPos1, vacPos2, pusher):
     except:
         return 1
     
-def update_stats(currentSpeed, dropsAmount, rotationAmount, vaccinationAmount1, vaccinationAmount2, startFlag, sessionFlag):
+def update_stats(currentSpeed, dropsAmount, rotationAmount, vaccinationAmount1, vaccinationAmount2, startFlag, sessionFlag, sessionNum):
     try:
         if conn:
             with conn.cursor() as curs:
-                curs.execute('INSERT INTO carousel_stats (timestamp, current_speed, dropsAmount, rotationAmount, vaccinationAmount1, vaccinationAmount2, startFlag, sessionFlag) VALUES (%s, %s, %s, %s, %s, %s, %s, %s)', (datetime.now(), currentSpeed, dropsAmount, rotationAmount, vaccinationAmount1, vaccinationAmount2, startFlag, sessionFlag))
+                curs.execute('INSERT INTO carousel_stats (timestamp, current_speed, dropsAmount, rotationAmount, vaccinationAmount1, vaccinationAmount2, startFlag, sessionFlag, sessionNum) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)', (datetime.now(), currentSpeed, dropsAmount, rotationAmount, vaccinationAmount1, vaccinationAmount2, startFlag, sessionFlag, sessionNum))
                 conn.commit()
                 return 0
         return 'NO CONNECTION (UPDATE STATS)'
@@ -105,3 +109,30 @@ def drop_tables():
 def disconnect_from_db():
     if conn:
         conn.close()
+
+def get_sessions_num(date: str):
+    try:
+        if conn:
+            with conn.cursor() as curs:
+                curs.execute(f"SELECT DISTINCT carousel_stats.sessionnum FROM carousel_stats where carousel_stats.timestamp between '{date}' and date '{date}' + INTERVAL '1 day'")
+                rows = curs.fetchall()
+                if len(rows) != 0:
+                    sessionStartDict = []
+                    sessionEndDict = []
+                    for row in rows:
+                        row=row[0]
+                        curs.execute(f"SELECT * from carousel_stats where carousel_stats.timestamp between '{date}' and date '{date}' + INTERVAL '1 day' and carousel_stats.sessionnum={row} and carousel_stats.sessionflag=true order by id ASC limit 1")
+                        startID = curs.fetchall()
+                        if len(startID) != 0:
+                            startID = startID[0]
+                            sessionStartDict.append(startID)
+                        curs.execute(f"SELECT * from carousel_stats where carousel_stats.timestamp between '{date}' and date '{date}' + INTERVAL '1 day' and carousel_stats.sessionnum={row} and carousel_stats.sessionflag=true order by id DESC limit 1")
+                        endID = curs.fetchall()
+                        if len(endID) != 0:
+                            endID = endID[0]
+                            sessionEndDict.append(endID)
+                    return [sessionStartDict, sessionEndDict, len(rows)]
+                return [[], [], 0]
+        return [[], [], 0]
+    except:
+        return [[], [], 0]

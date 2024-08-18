@@ -4,7 +4,7 @@ from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 import yaml
 import pathlib
-from .db_communication import connect_to_db, init_tables, update_settings, update_stats, remove_old_stats, drop_tables, read_stats, read_settings
+from .db_communication import connect_to_db, init_tables, update_settings, update_stats, remove_old_stats, drop_tables, read_stats, read_settings, get_sessions_num
 import time
 
 app = FastAPI()
@@ -41,6 +41,9 @@ class stateStuct(BaseModel):
     startFlag: bool
     sessionFlag: bool
 
+class dateStuct(BaseModel):
+    date: str
+
 def init_carousel_db():
     while True:
         if connect_to_db():
@@ -75,6 +78,7 @@ def init_carousel_db():
         fullDict['vaccinationAmount2'] = 0
         fullDict['startFlag'] = False
         fullDict['sessionFlag'] = False
+        fullDict['sessionNum'] = 0
     else:
         tempList = tempList[0]
         fullDict['currentSpeed'] = tempList[2]
@@ -84,6 +88,7 @@ def init_carousel_db():
         fullDict['vaccinationAmount2'] = tempList[6]
         fullDict['startFlag'] = False
         fullDict['sessionFlag'] = tempList[8]
+        fullDict['sessionNum'] = tempList[9]
 
 fullDict = {}
 init_carousel_db()
@@ -153,6 +158,7 @@ async def getStats(request: Request)->dict:
         fullDict['vaccinationAmount2'] = 0
         fullDict['startFlag'] = False
         fullDict['sessionFlag'] = False
+        fullDict['sessionNum'] = 0
     else:
         tempList = tempList[0]
         fullDict['currentSpeed'] = tempList[2]
@@ -162,6 +168,8 @@ async def getStats(request: Request)->dict:
         fullDict['vaccinationAmount2'] = tempList[6]
         fullDict['startFlag'] = tempList[7]
         fullDict['sessionFlag'] = tempList[8]
+        fullDict['sessionNum'] = tempList[9]
+        
     stats = [{ 'id': 0, 'title': 'Целевая скорость', 'value': fullDict['targetSpeed'] },
         { 'id': 1, 'title': 'Текущая скорость', 'value': fullDict['currentSpeed'] },
         { 'id': 2, 'title': 'Количество оборотов', 'value': fullDict['rotationAmount'] },
@@ -184,10 +192,8 @@ async def postState(newState: stateStuct)->dict:
     fullDict['sessionFlag'] = newState.sessionFlag
     
     try:
-        # with open(config, 'w', encoding='utf8') as file:
-        #     yaml.dump(fullDict, file, allow_unicode=True, default_flow_style=False)
         print(fullDict)
-        update_stats(fullDict['currentSpeed'], fullDict['dropsAmount'], fullDict['rotationAmount'], fullDict['vaccinationAmount1'], fullDict['vaccinationAmount2'], fullDict['startFlag'], fullDict['sessionFlag'] )
+        update_stats(fullDict['currentSpeed'], fullDict['dropsAmount'], fullDict['rotationAmount'], fullDict['vaccinationAmount1'], fullDict['vaccinationAmount2'], fullDict['startFlag'], fullDict['sessionFlag'], fullDict['sessionNum'] )
 
     except:
         return {
@@ -196,3 +202,20 @@ async def postState(newState: stateStuct)->dict:
     return {
         "status": "success",
     }
+
+@app.post("/api/report", tags=["state"])
+async def postReport(date: dateStuct)->dict:
+    # print(date.date)
+    startDict, endDict, sessionsAmount = get_sessions_num(date.date)
+    # print(startDict, endDict)
+
+    dictReport = []
+
+    for start, end in zip(startDict, endDict):
+        dictReport.append({'id' : start[-1], 'startTime' : str(start[1]), 'endTime' : str(end[1]), 'dropsAmount' : end[3], 'rotationAmount' : end[4], 'vaccinationAmount1' : end[5], 'vaccinationAmount2' : end[6], 'status': 'finished'})
+    
+    if len(dictReport):
+        if len(dictReport) == sessionsAmount:
+            dictReport.sort(key=lambda x: x['id'])
+            dictReport[-1]['status'] = 'active'
+    return JSONResponse(content=dictReport)
