@@ -29,6 +29,7 @@ class settingsStruct(BaseModel):
     vacPos1: int
     vacPos2: int
     pusher: str
+    control: str
 
 class statsStuct(BaseModel):
     targetSpeed: float
@@ -51,6 +52,7 @@ def init_carousel_db():
         else:
             print("CONNECTED TO DB")
             break
+    # drop_tables()
     init_tables()
     
     tempList = read_settings()
@@ -60,6 +62,7 @@ def init_carousel_db():
         fullDict['vacPos1'] = 2
         fullDict['vacPos2'] = 3
         fullDict['pusher'] = 'Drop all'
+        fullDict['control'] = 'Enabled'
     else:
         tempList = tempList[0]
         fullDict['rotDir'] = tempList[2]
@@ -67,6 +70,7 @@ def init_carousel_db():
         fullDict['vacPos1'] = tempList[4]
         fullDict['vacPos2'] = tempList[5]
         fullDict['pusher'] = tempList[6]
+        fullDict['control'] = tempList[7]
 
     tempList = read_stats()
     if len(tempList) == 0:
@@ -105,8 +109,9 @@ async def postSettings(settingsNew: settingsStruct):
     fullDict['vacPos1'] = settingsNew.vacPos1
     fullDict['vacPos2'] = settingsNew.vacPos2
     fullDict['pusher'] = 'Drop all' if settingsNew.pusher == 'Сброс всех' else ('Drop none' if settingsNew.pusher == 'Без сброса' else ('One vaccine' if settingsNew.pusher == 'Одна вакцина' else 'Two vaccines'))
+    fullDict['control'] = 'Enabled' if settingsNew.control == 'Включен' else 'Disabled'
     try:
-        print(update_settings(fullDict['rotDir'], fullDict['targetSpeed'], fullDict['vacPos1'], fullDict['vacPos2'], fullDict['pusher']))
+        print(update_settings(fullDict['rotDir'], fullDict['targetSpeed'], fullDict['vacPos1'], fullDict['vacPos2'], fullDict['pusher'], fullDict['control']))
     # try:
     #     with open(config, 'w', encoding='utf8') as file:
     #         yaml.dump(fullDict, file, allow_unicode=True, default_flow_style=False)
@@ -123,25 +128,21 @@ async def getSettings():
     # loadConfig()
     global fullDict
     tempList = read_settings()
-    # if len(tempList) == 0:
-    #     fullDict['rotDir'] = 'Против часовой'
-    #     fullDict['targetSpeed'] = 1.8
-    #     fullDict['vacPos1'] = 2
-    #     fullDict['vacPos2'] = 3
-    #     fullDict['pusher'] = 'Сброс всех'
-    # else:
+
     tempList = tempList[0]
     fullDict['rotDir'] = tempList[2]
     fullDict['targetSpeed'] = tempList[3]
     fullDict['vacPos1'] = tempList[4]
     fullDict['vacPos2'] = tempList[5]
     fullDict['pusher'] = tempList[6]
+    fullDict['control'] = tempList[7]
     
     settings = [{ 'id': 0, 'title': 'Направление вращения', 'options': ['По часовой', 'Против часовой'], 'nameSet': 'rotDir', 'value': 'Против часовой' if fullDict['rotDir'] == 'Counterclockwise' else 'По часовой', 'input':'SelectInput'},
-        { 'id': 1, 'title': 'Позиция вакцинатора 1', 'options': [2, 3, 4, 5, 6, 7, 8, 9], 'nameSet': 'vacPos1', 'value': fullDict['vacPos1'], 'input':'SelectInput' },
-        { 'id': 2, 'title': 'Позиция вакцинатора 2', 'options': [2, 3, 4, 5, 6, 7, 8, 9], 'nameSet': 'vacPos2', 'value': fullDict['vacPos2'], 'input':'SelectInput' },
-        { 'id': 3, 'title': 'Толкатель', 'options': ['Без сброса', 'Сброс всех', 'Одна вакцина', 'Две вакцины'], 'nameSet': 'pusher', 'value': 'Сброс всех' if fullDict['pusher'] == 'Drop all' else ('Без сброса' if fullDict['pusher'] == 'Drop none' else ('Одна вакцина' if fullDict['pusher'] == 'One vaccine' else 'Две вакцины')), 'input': 'SelectInput' },
-        { 'id': 4, 'title': 'Скорость вращения', 'options': [], 'nameSet': 'targetSpeed', 'value': fullDict['targetSpeed'], 'input':'SliderInput' }]
+        { 'id': 1, 'title': 'Контроль вакцинации', 'options': ['Включен', 'Выключен'], 'nameSet': 'control', 'value': 'Включен' if fullDict['control'] == 'Enabled' else 'Выключен', 'input':'SelectInput' },
+        { 'id': 2, 'title': 'Толкатель', 'options': ['Сброс всех', 'Одна вакцина', 'Две вакцины'], 'nameSet': 'pusher', 'value': 'Сброс всех' if fullDict['pusher'] == 'Drop all' else ('Без сброса' if fullDict['pusher'] == 'Drop none' else ('Одна вакцина' if fullDict['pusher'] == 'One vaccine' else 'Две вакцины')), 'input': 'SelectInput' },
+        { 'id': 3, 'title': 'Позиция вакцинатора 1', 'options': [1, 2, 3, 4, 5, 6, 7, 8], 'nameSet': 'vacPos1', 'value': fullDict['vacPos1'], 'input':'SelectInput' },
+        { 'id': 4, 'title': 'Позиция вакцинатора 2', 'options': [1, 2, 3, 4, 5, 6, 7, 8], 'nameSet': 'vacPos2', 'value': fullDict['vacPos2'], 'input':'SelectInput' },
+        { 'id': 5, 'title': 'Скорость вращения', 'options': [], 'nameSet': 'targetSpeed', 'value': fullDict['targetSpeed'], 'input':'SliderInput' }]
     return JSONResponse(content=settings)
 
 @app.get("/api/stats", tags=["stats"])

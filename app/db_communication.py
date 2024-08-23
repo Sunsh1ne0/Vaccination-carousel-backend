@@ -27,23 +27,23 @@ def init_tables():
                     curs.execute('INSERT INTO carousel_stats (timestamp, current_speed, dropsAmount, rotationAmount, vaccinationAmount1, vaccinationAmount2, startFlag, sessionFlag, sessionNum) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)', (datetime.now(), 0, 0, 0, 0, 0, False, False, 0))
                     conn.commit()
         
-                curs.execute('CREATE TABLE IF NOT EXISTS carousel_settings (id Serial, timestamp TIMESTAMP, rotDir text, targetSpeed float8, vacPos1 INT, vacPos2 INT, pusher text)')                
+                curs.execute('CREATE TABLE IF NOT EXISTS carousel_settings (id Serial, timestamp TIMESTAMP, rotDir text, targetSpeed float8, vacPos1 INT, vacPos2 INT, pusher text, control text)')                
                 curs.execute('SELECT * FROM carousel_settings ORDER BY id DESC LIMIT 1')
                 rows = curs.fetchall()
                 if len(rows) == 0:
-                    curs.execute('INSERT INTO carousel_settings (timestamp, rotDir, targetSpeed, vacPos1, vacPos2, pusher) VALUES (%s, %s, %s, %s, %s, %s)', (datetime.now(), 'Counterclockwise', 1.8, 2, 3, 'Drop all'))
+                    curs.execute('INSERT INTO carousel_settings (timestamp, rotDir, targetSpeed, vacPos1, vacPos2, pusher, control) VALUES (%s, %s, %s, %s, %s, %s, %s)', (datetime.now(), 'Counterclockwise', 1.8, 2, 3, 'Drop all', 'Включен'))
                     conn.commit()
             return 0
         return 'NO CONNECTION (INITIALIZE)'
     except:
         return 1
 
-def update_settings(rotDir, targetSpeed, vacPos1, vacPos2, pusher):
+def update_settings(rotDir, targetSpeed, vacPos1, vacPos2, pusher, control):
     try:
         print(conn)
         if conn:
             with conn.cursor() as curs:
-                curs.execute('UPDATE carousel_settings SET timestamp = %s, rotDir = %s, targetSpeed = %s, vacPos1 = %s, vacPos2 = %s, pusher = %s WHERE id = %s', (datetime.now(), rotDir, targetSpeed, vacPos1, vacPos2, pusher, 1))
+                curs.execute('UPDATE carousel_settings SET timestamp = %s, rotDir = %s, targetSpeed = %s, vacPos1 = %s, vacPos2 = %s, pusher = %s, control = %s WHERE id = %s', (datetime.now(), rotDir, targetSpeed, vacPos1, vacPos2, pusher, control, 1))
                 conn.commit()
                 return 0
         return 'NO CONNECTION (UPDATE SETTINGS)'
